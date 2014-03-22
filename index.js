@@ -96,5 +96,5 @@ module.exports = exports = {
   ActiveSocket: ActiveSocket,
   createClient: function(options) {
     return new ActiveSocket(options);
-  };
+  }
 };
