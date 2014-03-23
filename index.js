@@ -30,6 +30,20 @@ ActiveSocketRoom.prototype.broadcast = function(namespace, data) {
 };
 
 /**
+ * @method
+ * return array of ids which are member of the
+ * room instance
+ *
+ */
+ActiveSocketRoom.prototype.getMembers = function() {
+  var members = [];
+  for(var member in this.members) {
+    members.push(member);
+  }
+  return members;
+};
+
+/**
  * @constructor
  *
  * assumes the following structure as data.
@@ -73,7 +87,6 @@ ActiveSocketConnection.prototype.trigger = function(namespace, data) {
     this._ns[namespace][i](data, namespace);
   }
 
-  // XXX: Untested
   for (var i in this._ns['*']) {
     this._ns['*'][i](data, namespace);
   }
@@ -135,6 +148,21 @@ ActiveSocket.prototype.connection = function(cb) {
   this._sock.on('connection', function(conn) {
     cb(new ActiveSocketConnection({connection: conn, sock: that}));
   });
+};
+
+/**
+ * @method
+ * 
+ * options:
+ *  name
+ */
+ActiveSocket.prototype.createRoom = function(options) {
+  if(this.rooms[name] == undefined) {
+    this.rooms[name] = new ActiveSocketRoom({
+      name: options.name, 
+      options: options
+    });
+  }
 };
 
 module.exports = exports = {
