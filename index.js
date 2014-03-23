@@ -1,6 +1,37 @@
 /**
  * @constructor
  *
+ * Creates a room instance used to store
+ * ActiveSocketConnection instances.
+ *
+ * options:
+ *   name {string}
+ *   members {hash}
+ */
+var ActiveSocketRoom = function(options) {
+  this._options = options;
+  this.name = options.name;
+  this.members = options.members || {};
+};
+
+ActiveSocketRoom.prototype.join = function(conn) {
+  this.members[conn.id] = conn;
+  conn.rooms_joined.push(this.name);
+};
+
+ActiveSocketRoom.prototype.leave = function(connId) {
+  delete this.members[connId]
+};
+
+ActiveSocketRoom.prototype.broadcast = function(namespace, data) { 
+  for(var id in this.members) {
+    this.members[id].emit(namespace, data);
+  }
+};
+
+/**
+ * @constructor
+ *
  * assumes the following structure as data.
  *
  * {
@@ -13,8 +44,11 @@
  */
 var ActiveSocketConnection = function(options) {
   this._options = options;
+  this._sock = options.sock;
   this._connection = options.connection;
   this._ns = {};
+  this.id = this._connection.id;
+  this.rooms_joined = [];
 
   var that = this;
   this._connection.on('data', function(data) {
@@ -24,6 +58,7 @@ var ActiveSocketConnection = function(options) {
 
   this._connection.on('close', function() {
     that.trigger('close');
+    that.leave_rooms();
   });
 };
 
@@ -63,6 +98,12 @@ ActiveSocketConnection.prototype.emit = function(namespace, data) {
   this._connection.write(JSON.stringify({namespace: namespace, data: data}));
 };
 
+ActiveSocketConnection.prototype.leave_rooms = function() {
+  for(var room in this.rooms_joined) {
+    this._sock.rooms[this.rooms_joined[room]].leave(this.id);
+  }
+};
+
 /**
  * @constructor
  *
@@ -70,6 +111,9 @@ ActiveSocketConnection.prototype.emit = function(namespace, data) {
  */
 var ActiveSocket = function(options) {
   this._options = options;
+  this.rooms = {
+    "global": new ActiveSocketRoom({name: "global"})
+  };
   this._sock = require('sockjs').createServer();
 };
 
@@ -87,8 +131,9 @@ ActiveSocket.prototype.installHandlers = function() {
  */
 ActiveSocket.prototype.connection = function(cb) {
   // Override connection object
+  var that = this;
   this._sock.on('connection', function(conn) {
-    cb(new ActiveSocketConnection({connection: conn}));
+    cb(new ActiveSocketConnection({connection: conn, sock: that}));
   });
 };
 
