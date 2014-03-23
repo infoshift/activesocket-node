@@ -3,12 +3,18 @@ ActiveSocket
 
 A sock.js wrapper
 
+Requirements
+------------
+
+To use `activesocket-node` install [SockJS](https://github.com/sockjs/sockjs-node) using:
+
+    npm install sockjs
+
 Usage
 -----
 
-```
-// Setup http server and stuff...
-
+```javascript
+var http = require('http');
 var as = require('activesocket').createClient();
 
 as.connection(function(conn) {
@@ -26,6 +32,7 @@ as.connection(function(conn) {
 
 });
 
-as.installHandlers(httpServer, {prefix: '/sockjsendpoint'});
-server.listen();
+var server = http.createServer();
+as.installHandlers(server, {prefix: '/sockjsendpoint'});
+server.listen(9000, '0.0.0.0');
 ```
