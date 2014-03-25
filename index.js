@@ -31,6 +31,16 @@ ActiveSocketRoom.prototype.broadcast = function(namespace, data) {
 
 /**
  * @method
+ *
+ * emit to a specific connection id
+ *
+ */
+ActiveSocketRoom.prototype.emit_to = function(connId, namespace, data) {
+  this.members[connId].emit(namespace, data);
+};
+
+/**
+ * @method
  * return array of ids which are member of the
  * room instance
  *
@@ -156,13 +166,14 @@ ActiveSocket.prototype.connection = function(cb) {
  * options:
  *  name
  */
-ActiveSocket.prototype.createRoom = function(options) {
+ActiveSocket.prototype.createRoom = function(name, options) {
   if(this.rooms[name] == undefined) {
     this.rooms[name] = new ActiveSocketRoom({
-      name: options.name, 
+      name: name, 
       options: options
     });
   }
+  return this.rooms[name];
 };
 
 module.exports = exports = {
