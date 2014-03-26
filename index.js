@@ -14,9 +14,9 @@ var ActiveSocketRoom = function(options) {
   this.members = options.members || {};
 };
 
-ActiveSocketRoom.prototype.join = function(conn) {
-  this.members[conn.id] = conn;
-  conn.rooms_joined.push(this.name);
+ActiveSocketRoom.prototype.join = function(conn_name, conn) {
+  this.members[conn_name] = conn;
+  conn.rooms_joined[this.name] = conn_name;
 };
 
 ActiveSocketRoom.prototype.leave = function(connId) {
@@ -27,6 +27,16 @@ ActiveSocketRoom.prototype.broadcast = function(namespace, data) {
   for(var id in this.members) {
     this.members[id].emit(namespace, data);
   }
+};
+
+/**
+ * @method
+ *
+ * emit to a specific connection id
+ *
+ */
+ActiveSocketRoom.prototype.emit_to = function(connId, namespace, data) {
+  this.members[connId].emit(namespace, data);
 };
 
 /**
@@ -62,7 +72,7 @@ var ActiveSocketConnection = function(options) {
   this._connection = options.connection;
   this._ns = {};
   this.id = this._connection.id;
-  this.rooms_joined = [];
+  this.rooms_joined = {};
 
   var that = this;
   this._connection.on('data', function(data) {
@@ -113,7 +123,7 @@ ActiveSocketConnection.prototype.emit = function(namespace, data) {
 
 ActiveSocketConnection.prototype.leave_rooms = function() {
   for(var room in this.rooms_joined) {
-    this._sock.rooms[this.rooms_joined[room]].leave(this.id);
+    this._sock.rooms[room].leave(this.rooms_joined[room]);
   }
 };
 
@@ -156,13 +166,14 @@ ActiveSocket.prototype.connection = function(cb) {
  * options:
  *  name
  */
-ActiveSocket.prototype.createRoom = function(options) {
+ActiveSocket.prototype.createRoom = function(name, options) {
   if(this.rooms[name] == undefined) {
     this.rooms[name] = new ActiveSocketRoom({
-      name: options.name, 
+      name: name, 
       options: options
     });
   }
+  return this.rooms[name];
 };
 
 module.exports = exports = {
