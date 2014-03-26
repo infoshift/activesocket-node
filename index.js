@@ -14,9 +14,9 @@ var ActiveSocketRoom = function(options) {
   this.members = options.members || {};
 };
 
-ActiveSocketRoom.prototype.join = function(conn) {
-  this.members[conn.id] = conn;
-  conn.rooms_joined.push(this.name);
+ActiveSocketRoom.prototype.join = function(conn_name, conn) {
+  this.members[conn_name] = conn;
+  conn.rooms_joined[this.name] = conn_name;
 };
 
 ActiveSocketRoom.prototype.leave = function(connId) {
@@ -72,7 +72,7 @@ var ActiveSocketConnection = function(options) {
   this._connection = options.connection;
   this._ns = {};
   this.id = this._connection.id;
-  this.rooms_joined = [];
+  this.rooms_joined = {};
 
   var that = this;
   this._connection.on('data', function(data) {
@@ -123,7 +123,7 @@ ActiveSocketConnection.prototype.emit = function(namespace, data) {
 
 ActiveSocketConnection.prototype.leave_rooms = function() {
   for(var room in this.rooms_joined) {
-    this._sock.rooms[this.rooms_joined[room]].leave(this.id);
+    this._sock.rooms[room].leave(this.rooms_joined[room]);
   }
 };
 
